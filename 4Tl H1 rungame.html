@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Economie Poortjes Game</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+}
+
+#game {
+  width: 400px;
+  height: 250px;
+  border: 3px solid black;
+  margin: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.player {
+  width: 30px;
+  height: 30px;
+  background: blue;
+  position: absolute;
+  bottom: 10px;
+  left: 185px;
+  transition: 0.2s;
+}
+
+.gate {
+  width: 120px;
+  height: 120px;
+  background: lightgray;
+  position: absolute;
+  top: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  padding: 5px;
+}
+
+.left { left: 10px; }
+.right { right: 10px; }
+
+#score {
+  font-size: 20px;
+}
+</style>
+
+</head>
+<body>
+
+<h2 id="question"></h2>
+<p id="score">Score: 0</p>
+
+<div id="game">
+  <div class="player" id="player"></div>
+  <div class="gate left" id="leftGate"></div>
+  <div class="gate right" id="rightGate"></div>
+</div>
+
+<p>Gebruik ⬅️ ➡️</p>
+
+<script>
+
+let score = 0;
+let correctIndex;
+let questions = [
+
+{
+q: "Wat is omzet?",
+a: ["Verkoopopbrengst", "Aantal verkochte producten"],
+correct: 0
+},
+
+{
+q: "Wat is brutowinst?",
+a: ["Omzet - inkoopwaarde", "Omzet + kosten"],
+correct: 0
+},
+
+{
+q: "Wat zijn vaste kosten?",
+a: ["Blijven gelijk", "Stijgen bij drukte"],
+correct: 0
+},
+
+{
+q: "Wat is afzet?",
+a: ["Aantal verkochte producten", "Totale winst"],
+correct: 0
+},
+
+{
+q: "Wat is een homogeen product?",
+a: ["Producten zijn hetzelfde", "Producten verschillen"],
+correct: 0
+},
+
+{
+q: "Wat is een oligopolie?",
+a: ["Weinig aanbieders", "Veel aanbieders"],
+correct: 0
+},
+
+{
+q: "Wat is btw?",
+a: ["Belasting op aankoop", "Bedrijfskosten"],
+correct: 0
+},
+
+{
+q: "Wat is nettowinst?",
+a: ["Brutowinst - kosten", "Omzet - btw"],
+correct: 0
+}
+
+];
+
+function newQuestion() {
+  let q = questions[Math.floor(Math.random() * questions.length)];
+
+  correctIndex = q.correct;
+
+  // random links/rechts
+  if(Math.random() > 0.5){
+    document.getElementById("leftGate").innerText = q.a[0];
+    document.getElementById("rightGate").innerText = q.a[1];
+  } else {
+    document.getElementById("leftGate").innerText = q.a[1];
+    document.getElementById("rightGate").innerText = q.a[0];
+    correctIndex = 1;
+  }
+
+  document.getElementById("question").innerText = q.q;
+}
+
+document.addEventListener("keydown", function(e){
+
+  if(e.key === "ArrowLeft"){
+    movePlayer("left");
+    checkAnswer(0);
+  }
+
+  if(e.key === "ArrowRight"){
+    movePlayer("right");
+    checkAnswer(1);
+  }
+
+});
+
+function movePlayer(direction){
+  let player = document.getElementById("player");
+
+  if(direction === "left"){
+    player.style.left = "80px";
+  } else {
+    player.style.left = "260px";
+  }
+
+  setTimeout(() => {
+    player.style.left = "185px";
+  }, 200);
+}
+
+function checkAnswer(choice){
+
+  if(choice === correctIndex){
+    score++;
+    document.getElementById("score").innerText = "Score: " + score;
+  } else {
+    score = 0;
+    alert("Fout! Score reset.");
+    document.getElementById("score").innerText = "Score: 0";
+  }
+
+  newQuestion();
+}
+
+newQuestion();
+
+</script>
+
+</body>
+</html>
