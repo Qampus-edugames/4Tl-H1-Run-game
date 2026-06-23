@@ -2,176 +2,183 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Economie Runner Pro</title>
+<title>Economie Runner Cartoon</title>
 
 <style>
 body {
   text-align: center;
-  font-family: Arial;
-  background: #eef;
+  font-family: "Comic Sans MS", Arial;
+  background: linear-gradient(#87CEFA, #ffffff);
 }
 
 #game {
   width: 420px;
-  height: 400px;
+  height: 420px;
   margin: auto;
-  border: 3px solid black;
+  border: 4px solid #333;
+  border-radius: 15px;
   position: relative;
   overflow: hidden;
-  background: white;
+  background: #fdfdfd;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
 }
 
 .player {
-  width: 30px;
-  height: 30px;
-  background: blue;
   position: absolute;
   bottom: 20px;
   left: 185px;
-  transition: 0.15s;
+  font-size: 30px;
+  transition: 0.12s ease-in-out;
 }
 
 .gate {
   width: 110px;
-  height: 90px;
-  background: lightgray;
+  height: 100px;
   position: absolute;
   top: -120px;
+  border-radius: 15px;
+  border: 3px solid #333;
+  background: linear-gradient(#fff, #ddd);
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
+  font-size: 13px;
   padding: 5px;
-  font-size: 12px;
-  border-radius: 8px;
 }
 
 .lane0 { left: 10px; }
 .lane1 { left: 155px; }
 .lane2 { right: 10px; }
 
-.correct { background: lightgreen; }
-.wrong { background: #ff9999; }
+.correct { background: #b6fcb6 !important; }
+.wrong { background: #ffb3b3 !important; }
 
 #hud {
   font-size: 18px;
+  margin-bottom: 10px;
 }
+
+#feedback {
+  height: 40px;
+  font-weight: bold;
+}
+
 </style>
 </head>
 
 <body>
 
-<h2 id="question"></h2>
+<h2 id="question">Vraag...</h2>
+
 <div id="hud">
 Score: <span id="score">0</span> |
 Combo: <span id="combo">0</span> |
 Levens: <span id="lives">❤️❤️❤️</span>
 </div>
 
+<div id="feedback"></div>
+
 <div id="game">
-  <div class="player" id="player"></div>
+  <div class="player" id="player">🧑</div>
 
   <div class="gate lane0" id="g0"></div>
   <div class="gate lane1" id="g1"></div>
   <div class="gate lane2" id="g2"></div>
 </div>
 
-<p>Gebruik ⬅️ ⬆️ ➡️</p>
+<p>⬅️ ⬆️ ➡️</p>
+
+<audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/boing.ogg"></audio>
+<audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
 <script>
 
 let score = 0;
 let combo = 0;
 let lives = 3;
-
 let speed = 2;
 let gateY = -120;
 
 let playerLane = 1;
 let correctLane = 1;
 
-// VRAGEN MET UITLEG (didactisch sterk)
 let questions = [
 {
 q: "Wat is omzet?",
-a: ["Verkoopopbrengst", "Aantal producten", "Totale kosten"],
+a: ["Verkoopopbrengst", "Aantal producten", "Kosten"],
 correct: 0,
 explain: "Omzet = alles wat je verdient met verkopen."
 },
 {
 q: "Wat is brutowinst?",
-a: ["Omzet - inkoopwaarde", "Omzet + kosten", "Alle winst"],
+a: ["Omzet - inkoop", "Omzet + kosten", "Totale winst"],
 correct: 0,
-explain: "Brutowinst = omzet - inkoopwaarde."
+explain: "Brutowinst = omzet - inkoop."
 },
 {
 q: "Wat zijn vaste kosten?",
-a: ["Blijven gelijk", "Stijgen bij drukte", "Zijn winst"],
+a: ["Blijven gelijk", "Stijgen", "Winst"],
 correct: 0,
-explain: "Vaste kosten veranderen niet met productie."
+explain: "Vaste kosten veranderen niet."
 },
 {
 q: "Wat is afzet?",
-a: ["Aantal verkochte producten", "Totale omzet", "Winst"],
+a: ["Aantal verkocht", "Winst", "Omzet"],
 correct: 0,
-explain: "Afzet = hoeveel je verkoopt."
+explain: "Afzet = aantal producten verkocht."
 },
 {
 q: "Wat is btw?",
-a: ["Belasting op aankoop", "Bedrijfskosten", "Winst"],
+a: ["Belasting", "Kosten", "Winst"],
 correct: 0,
-explain: "Btw betaal je als consument bij aankoop."
-},
-{
-q: "Wat is een oligopolie?",
-a: ["Weinig aanbieders", "Veel aanbieders", "1 aanbieder"],
-correct: 0,
-explain: "Oligopolie = kleine groep bedrijven."
-},
-{
-q: "Wat is nettowinst?",
-a: ["Brutowinst - kosten", "Omzet - btw", "Inkoopprijs"],
-correct: 0,
-explain: "Nettowinst is wat echt overblijft."
+explain: "Btw = belasting op aankoop."
 }
 ];
 
-function newQuestion() {
-  let q = questions[Math.floor(Math.random() * questions.length)];
+function newQuestion(){
+  let q = questions[Math.floor(Math.random()*questions.length)];
   document.getElementById("question").innerText = q.q;
 
-  let answers = [...q.a].sort(() => Math.random() - 0.5);
+  let shuffled = [...q.a].sort(()=>Math.random()-0.5);
 
-  for(let i = 0; i < 3; i++){
-    let g = document.getElementById("g"+i);
-    g.innerText = answers[i];
-    g.classList.remove("correct","wrong");
+  for(let i=0;i<3;i++){
+    let el = document.getElementById("g"+i);
+    el.innerText = shuffled[i];
+    el.classList.remove("correct","wrong");
 
-    if(answers[i] === q.a[q.correct]){
+    if(shuffled[i] === q.a[q.correct]){
       correctLane = i;
     }
   }
 
-  window.currentExplain = q.explain;
+  window.explain = q.explain;
 }
 
 document.addEventListener("keydown", function(e){
-  if(e.key === "ArrowLeft") move(0);
-  if(e.key === "ArrowUp") move(1);
-  if(e.key === "ArrowRight") move(2);
+  if(e.key==="ArrowLeft") move(0);
+  if(e.key==="ArrowUp") move(1);
+  if(e.key==="ArrowRight") move(2);
 });
 
 function move(lane){
   playerLane = lane;
-
-  let pos = [50, 185, 320];
-  document.getElementById("player").style.left = pos[lane] + "px";
+  let pos = [50,185,320];
+  document.getElementById("player").style.left = pos[lane]+"px";
 }
 
 function updateLives(){
-  let hearts = "";
-  for(let i=0;i<lives;i++) hearts += "❤️";
-  document.getElementById("lives").innerText = hearts;
+  document.getElementById("lives").innerText = "❤️".repeat(lives);
+}
+
+function feedback(text, color){
+  let el = document.getElementById("feedback");
+  el.innerText = text;
+  el.style.color = color;
+}
+
+function flash(color){
+  document.body.style.background = color;
+  setTimeout(()=>document.body.style.background="",150);
 }
 
 function gameLoop(){
@@ -179,36 +186,40 @@ function gameLoop(){
   gateY += speed;
 
   for(let i=0;i<3;i++){
-    document.getElementById("g"+i).style.top = gateY + "px";
+    document.getElementById("g"+i).style.top = gateY+"px";
   }
 
-  // CHECK botsing
-  if(gateY > 220 && gateY < 260){
+  if(gateY > 250 && gateY < 280){
 
     if(playerLane === correctLane){
-      score += 10 + combo * 2;
+
+      document.getElementById("correctSound").play();
+      flash("#c8f7c5");
+
+      score += 10 + combo*2;
       combo++;
       speed += 0.1;
 
+      feedback("✅ Goed!", "green");
+
       document.getElementById("g"+correctLane).classList.add("correct");
 
-      // speler groeit
+      // groei effect
       let size = 30 + combo;
-      document.getElementById("player").style.width = size+"px";
-      document.getElementById("player").style.height = size+"px";
+      document.getElementById("player").style.fontSize = size+"px";
 
     } else {
+
+      document.getElementById("wrongSound").play();
+      flash("#f7c5c5");
+
       lives--;
       combo = 0;
       speed = 2;
 
-      document.getElementById("g"+correctLane).classList.add("correct");
-      document.getElementById("g"+playerLane).classList.add("wrong");
+      feedback("❌ " + window.explain, "red");
 
-      alert("Fout!\n\n" + window.currentExplain);
-
-      document.getElementById("player").style.width = "30px";
-      document.getElementById("player").style.height = "30px";
+      document.getElementById("player").style.fontSize = "30px";
 
       if(lives <= 0){
         alert("Game Over! Score: " + score);
