@@ -2,21 +2,23 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Economie Poortjes Game</title>
+<title>Economie Runner Pro</title>
 
 <style>
 body {
-  font-family: Arial;
   text-align: center;
+  font-family: Arial;
+  background: #eef;
 }
 
 #game {
-  width: 400px;
-  height: 250px;
-  border: 3px solid black;
+  width: 420px;
+  height: 400px;
   margin: auto;
+  border: 3px solid black;
   position: relative;
   overflow: hidden;
+  background: white;
 }
 
 .player {
@@ -24,163 +26,229 @@ body {
   height: 30px;
   background: blue;
   position: absolute;
-  bottom: 10px;
+  bottom: 20px;
   left: 185px;
-  transition: 0.2s;
+  transition: 0.15s;
 }
 
 .gate {
-  width: 120px;
-  height: 120px;
+  width: 110px;
+  height: 90px;
   background: lightgray;
   position: absolute;
-  top: 50px;
+  top: -120px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 14px;
+  text-align: center;
   padding: 5px;
+  font-size: 12px;
+  border-radius: 8px;
 }
 
-.left { left: 10px; }
-.right { right: 10px; }
+.lane0 { left: 10px; }
+.lane1 { left: 155px; }
+.lane2 { right: 10px; }
 
-#score {
-  font-size: 20px;
+.correct { background: lightgreen; }
+.wrong { background: #ff9999; }
+
+#hud {
+  font-size: 18px;
 }
 </style>
-
 </head>
+
 <body>
 
 <h2 id="question"></h2>
-<p id="score">Score: 0</p>
+<div id="hud">
+Score: <span id="score">0</span> |
+Combo: <span id="combo">0</span> |
+Levens: <span id="lives">❤️❤️❤️</span>
+</div>
 
 <div id="game">
   <div class="player" id="player"></div>
-  <div class="gate left" id="leftGate"></div>
-  <div class="gate right" id="rightGate"></div>
+
+  <div class="gate lane0" id="g0"></div>
+  <div class="gate lane1" id="g1"></div>
+  <div class="gate lane2" id="g2"></div>
 </div>
 
-<p>Gebruik ⬅️ ➡️</p>
+<p>Gebruik ⬅️ ⬆️ ➡️</p>
 
 <script>
 
 let score = 0;
-let correctIndex;
-let questions = [
+let combo = 0;
+let lives = 3;
 
+let speed = 2;
+let gateY = -120;
+
+let playerLane = 1;
+let correctLane = 1;
+
+// VRAGEN MET UITLEG (didactisch sterk)
+let questions = [
 {
 q: "Wat is omzet?",
-a: ["Verkoopopbrengst", "Aantal verkochte producten"],
-correct: 0
+a: ["Verkoopopbrengst", "Aantal producten", "Totale kosten"],
+correct: 0,
+explain: "Omzet = alles wat je verdient met verkopen."
 },
-
 {
 q: "Wat is brutowinst?",
-a: ["Omzet - inkoopwaarde", "Omzet + kosten"],
-correct: 0
+a: ["Omzet - inkoopwaarde", "Omzet + kosten", "Alle winst"],
+correct: 0,
+explain: "Brutowinst = omzet - inkoopwaarde."
 },
-
 {
 q: "Wat zijn vaste kosten?",
-a: ["Blijven gelijk", "Stijgen bij drukte"],
-correct: 0
+a: ["Blijven gelijk", "Stijgen bij drukte", "Zijn winst"],
+correct: 0,
+explain: "Vaste kosten veranderen niet met productie."
 },
-
 {
 q: "Wat is afzet?",
-a: ["Aantal verkochte producten", "Totale winst"],
-correct: 0
+a: ["Aantal verkochte producten", "Totale omzet", "Winst"],
+correct: 0,
+explain: "Afzet = hoeveel je verkoopt."
 },
-
-{
-q: "Wat is een homogeen product?",
-a: ["Producten zijn hetzelfde", "Producten verschillen"],
-correct: 0
-},
-
-{
-q: "Wat is een oligopolie?",
-a: ["Weinig aanbieders", "Veel aanbieders"],
-correct: 0
-},
-
 {
 q: "Wat is btw?",
-a: ["Belasting op aankoop", "Bedrijfskosten"],
-correct: 0
+a: ["Belasting op aankoop", "Bedrijfskosten", "Winst"],
+correct: 0,
+explain: "Btw betaal je als consument bij aankoop."
 },
-
+{
+q: "Wat is een oligopolie?",
+a: ["Weinig aanbieders", "Veel aanbieders", "1 aanbieder"],
+correct: 0,
+explain: "Oligopolie = kleine groep bedrijven."
+},
 {
 q: "Wat is nettowinst?",
-a: ["Brutowinst - kosten", "Omzet - btw"],
-correct: 0
+a: ["Brutowinst - kosten", "Omzet - btw", "Inkoopprijs"],
+correct: 0,
+explain: "Nettowinst is wat echt overblijft."
 }
-
 ];
 
 function newQuestion() {
   let q = questions[Math.floor(Math.random() * questions.length)];
+  document.getElementById("question").innerText = q.q;
 
-  correctIndex = q.correct;
+  let answers = [...q.a].sort(() => Math.random() - 0.5);
 
-  // random links/rechts
-  if(Math.random() > 0.5){
-    document.getElementById("leftGate").innerText = q.a[0];
-    document.getElementById("rightGate").innerText = q.a[1];
-  } else {
-    document.getElementById("leftGate").innerText = q.a[1];
-    document.getElementById("rightGate").innerText = q.a[0];
-    correctIndex = 1;
+  for(let i = 0; i < 3; i++){
+    let g = document.getElementById("g"+i);
+    g.innerText = answers[i];
+    g.classList.remove("correct","wrong");
+
+    if(answers[i] === q.a[q.correct]){
+      correctLane = i;
+    }
   }
 
-  document.getElementById("question").innerText = q.q;
+  window.currentExplain = q.explain;
 }
 
 document.addEventListener("keydown", function(e){
-
-  if(e.key === "ArrowLeft"){
-    movePlayer("left");
-    checkAnswer(0);
-  }
-
-  if(e.key === "ArrowRight"){
-    movePlayer("right");
-    checkAnswer(1);
-  }
-
+  if(e.key === "ArrowLeft") move(0);
+  if(e.key === "ArrowUp") move(1);
+  if(e.key === "ArrowRight") move(2);
 });
 
-function movePlayer(direction){
-  let player = document.getElementById("player");
+function move(lane){
+  playerLane = lane;
 
-  if(direction === "left"){
-    player.style.left = "80px";
-  } else {
-    player.style.left = "260px";
-  }
-
-  setTimeout(() => {
-    player.style.left = "185px";
-  }, 200);
+  let pos = [50, 185, 320];
+  document.getElementById("player").style.left = pos[lane] + "px";
 }
 
-function checkAnswer(choice){
+function updateLives(){
+  let hearts = "";
+  for(let i=0;i<lives;i++) hearts += "❤️";
+  document.getElementById("lives").innerText = hearts;
+}
 
-  if(choice === correctIndex){
-    score++;
-    document.getElementById("score").innerText = "Score: " + score;
-  } else {
-    score = 0;
-    alert("Fout! Score reset.");
-    document.getElementById("score").innerText = "Score: 0";
+function gameLoop(){
+
+  gateY += speed;
+
+  for(let i=0;i<3;i++){
+    document.getElementById("g"+i).style.top = gateY + "px";
   }
 
+  // CHECK botsing
+  if(gateY > 220 && gateY < 260){
+
+    if(playerLane === correctLane){
+      score += 10 + combo * 2;
+      combo++;
+      speed += 0.1;
+
+      document.getElementById("g"+correctLane).classList.add("correct");
+
+      // speler groeit
+      let size = 30 + combo;
+      document.getElementById("player").style.width = size+"px";
+      document.getElementById("player").style.height = size+"px";
+
+    } else {
+      lives--;
+      combo = 0;
+      speed = 2;
+
+      document.getElementById("g"+correctLane).classList.add("correct");
+      document.getElementById("g"+playerLane).classList.add("wrong");
+
+      alert("Fout!\n\n" + window.currentExplain);
+
+      document.getElementById("player").style.width = "30px";
+      document.getElementById("player").style.height = "30px";
+
+      if(lives <= 0){
+        alert("Game Over! Score: " + score);
+        resetGame();
+        return;
+      }
+    }
+
+    document.getElementById("score").innerText = score;
+    document.getElementById("combo").innerText = combo;
+    updateLives();
+
+    resetRound();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function resetRound(){
+  gateY = -120;
+  playerLane = 1;
+  document.getElementById("player").style.left = "185px";
   newQuestion();
 }
 
+function resetGame(){
+  score = 0;
+  combo = 0;
+  lives = 3;
+  speed = 2;
+  updateLives();
+  document.getElementById("score").innerText = 0;
+  document.getElementById("combo").innerText = 0;
+  resetRound();
+}
+
+// start
+updateLives();
 newQuestion();
+gameLoop();
 
 </script>
 
